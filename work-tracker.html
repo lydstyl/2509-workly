@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Time Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            padding: 40px 30px;
+        }
+
+        .control-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .main-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 1.3rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .main-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .main-button.break-mode {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+            box-shadow: 0 10px 20px rgba(252, 182, 159, 0.3);
+        }
+
+        .main-button.break-mode:hover {
+            box-shadow: 0 15px 30px rgba(252, 182, 159, 0.4);
+        }
+
+        .reset-button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-left: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .reset-button:hover {
+            background: #ff5252;
+            transform: translateY(-1px);
+        }
+
+        .stats-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: #f8f9ff;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            border-left: 5px solid #667eea;
+        }
+
+        .stat-card.break-stat {
+            border-left-color: #fcb69f;
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .time {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .timeline-section {
+            margin-top: 40px;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .timeline-header h3 {
+            color: #333;
+            font-size: 1.5rem;
+        }
+
+        .timeline {
+            max-height: 400px;
+            overflow-y: auto;
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #e0e6ff;
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+
+        .timeline-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .timeline-dot.work {
+            background: #667eea;
+        }
+
+        .timeline-dot.break {
+            background: #fcb69f;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .timeline-type {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .timeline-type.work {
+            color: #667eea;
+        }
+
+        .timeline-type.break {
+            color: #ff8a65;
+        }
+
+        .timeline-duration {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .timeline-time {
+            color: #999;
+            font-size: 0.8rem;
+            text-align: right;
+            min-width: 120px;
+        }
+
+        .current-session {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .current-session h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .current-session .current-time {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .main-content {
+                padding: 30px 20px;
+            }
+
+            .stats-section {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .main-button {
+                padding: 18px 35px;
+                font-size: 1.1rem;
+            }
+
+            .timeline-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .timeline-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+
+            .timeline-time {
+                text-align: left;
+                min-width: auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .main-button {
+                width: 100%;
+                padding: 15px;
+            }
+
+            .reset-button {
+                margin-left: 0;
+                margin-top: 10px;
+                width: 100%;
+            }
+        }
+
+        .empty-timeline {
+            text-align: center;
+            color: #999;
+            font-style: italic;
+            padding: 40px 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>Work Time Tracker</h1>
+            <p>Track your productivity and break times</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Control Section -->
+            <div class="control-section">
+                <button id="mainButton" class="main-button">Start Working</button>
+                <button id="resetButton" class="reset-button">Reset All Data</button>
+            </div>
+
+            <!-- Current Session Display -->
+            <div id="currentSession" class="current-session" style="display: none;">
+                <h4 id="currentSessionTitle">Current Work Session</h4>
+                <div id="currentSessionTime" class="current-time">00:00:00</div>
+            </div>
+
+            <!-- Statistics Section -->
+            <div class="stats-section">
+                <div class="stat-card">
+                    <h3>Total Work Time</h3>
+                    <div id="totalWorkTime" class="time">0 minutes</div>
+                </div>
+                <div class="stat-card break-stat">
+                    <h3>Total Break Time</h3>
+                    <div id="totalBreakTime" class="time">0 minutes</div>
+                </div>
+            </div>
+
+            <!-- Timeline Section -->
+            <div class="timeline-section">
+                <div class="timeline-header">
+                    <h3>Activity Timeline</h3>
+                </div>
+                <div class="timeline">
+                    <div id="timelineContent">
+                        <div class="empty-timeline">No activities recorded yet. Start working to begin tracking!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application state management
+        class WorkTracker {
+            constructor() {
+                // Load data from localStorage or initialize default state
+                this.loadData();
+
+                // Timer for current session
+                this.currentTimer = null;
+
+                // Initialize UI elements
+                this.initializeElements();
+
+                // Start the display update timer
+                this.startDisplayTimer();
+
+                // Update initial display
+                this.updateDisplay();
+            }
+
+            // Initialize DOM element references
+            initializeElements() {
+                this.mainButton = document.getElementById('mainButton');
+                this.resetButton = document.getElementById('resetButton');
+                this.currentSession = document.getElementById('currentSession');
+                this.currentSessionTitle = document.getElementById('currentSessionTitle');
+                this.currentSessionTime = document.getElementById('currentSessionTime');
+                this.totalWorkTime = document.getElementById('totalWorkTime');
+                this.totalBreakTime = document.getElementById('totalBreakTime');
+                this.timelineContent = document.getElementById('timelineContent');
+
+                // Add event listeners
+                this.mainButton.addEventListener('click', () => this.toggleState());
+                this.resetButton.addEventListener('click', () => this.resetAllData());
+            }
+
+            // Load data from localStorage
+            loadData() {
+                const savedData = localStorage.getItem('workTracker');
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    this.isWorking = data.isWorking || false;
+                    this.currentStartTime = data.currentStartTime || null;
+                    this.timeline = data.timeline || [];
+                    this.totalWork = data.totalWork || 0;
+                    this.totalBreak = data.totalBreak || 0;
+                } else {
+                    // Default state
+                    this.isWorking = false;
+                    this.currentStartTime = null;
+                    this.timeline = [];
+                    this.totalWork = 0;
+                    this.totalBreak = 0;
+                }
+            }
+
+            // Save data to localStorage
+            saveData() {
+                const data = {
+                    isWorking: this.isWorking,
+                    currentStartTime: this.currentStartTime,
+                    timeline: this.timeline,
+                    totalWork: this.totalWork,
+                    totalBreak: this.totalBreak
+                };
+                localStorage.setItem('workTracker', JSON.stringify(data));
+            }
+
+            // Toggle between work and break states
+            toggleState() {
+                const now = Date.now();
+
+                if (this.currentStartTime) {
+                    // End current session
+                    const duration = now - this.currentStartTime;
+                    const sessionType = this.isWorking ? 'work' : 'break';
+
+                    // Add to timeline
+                    this.timeline.unshift({
+                        type: sessionType,
+                        duration: duration,
+                        startTime: this.currentStartTime,
+                        endTime: now
+                    });
+
+                    // Update totals
+                    if (this.isWorking) {
+                        this.totalWork += duration;
+                    } else {
+                        this.totalBreak += duration;
+                    }
+                }
+
+                // Toggle state
+                this.isWorking = !this.isWorking;
+                this.currentStartTime = now;
+
+                // Save and update display
+                this.saveData();
+                this.updateDisplay();
+            }
+
+            // Reset all data
+            resetAllData() {
+                if (confirm('Are you sure you want to reset all tracking data? This cannot be undone.')) {
+                    this.isWorking = false;
+                    this.currentStartTime = null;
+                    this.timeline = [];
+                    this.totalWork = 0;
+                    this.totalBreak = 0;
+
+                    this.saveData();
+                    this.updateDisplay();
+                }
+            }
+
+            // Format milliseconds to human readable time
+            formatTime(milliseconds) {
+                const seconds = Math.floor(milliseconds / 1000);
+                const minutes = Math.floor(seconds / 60);
+                const hours = Math.floor(minutes / 60);
+
+                const remainingMinutes = minutes % 60;
+                const remainingSeconds = seconds % 60;
+
+                if (hours > 0) {
+                    return `${hours} hour${hours !== 1 ? 's' : ''} ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''} ${remainingSeconds} second${remainingSeconds !== 1 ? 's' : ''}`;
+                } else if (minutes > 0) {
+                    return `${minutes} minute${minutes !== 1 ? 's' : ''} ${remainingSeconds} second${remainingSeconds !== 1 ? 's' : ''}`;
+                } else {
+                    return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+                }
+            }
+
+            // Format time for display (HH:MM:SS)
+            formatTimeShort(milliseconds) {
+                const seconds = Math.floor(milliseconds / 1000);
+                const minutes = Math.floor(seconds / 60);
+                const hours = Math.floor(minutes / 60);
+
+                const remainingMinutes = minutes % 60;
+                const remainingSeconds = seconds % 60;
+
+                return `${hours.toString().padStart(2, '0')}:${remainingMinutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+            }
+
+            // Get current session duration
+            getCurrentSessionDuration() {
+                if (!this.currentStartTime) return 0;
+                return Date.now() - this.currentStartTime;
+            }
+
+            // Update all display elements
+            updateDisplay() {
+                // Update main button
+                if (this.currentStartTime) {
+                    if (this.isWorking) {
+                        this.mainButton.textContent = 'Take a Break';
+                        this.mainButton.className = 'main-button break-mode';
+                    } else {
+                        this.mainButton.textContent = 'Start Working';
+                        this.mainButton.className = 'main-button';
+                    }
+                } else {
+                    this.mainButton.textContent = 'Start Working';
+                    this.mainButton.className = 'main-button';
+                }
+
+                // Update current session display
+                if (this.currentStartTime) {
+                    this.currentSession.style.display = 'block';
+                    this.currentSessionTitle.textContent = this.isWorking ? 'Current Work Session' : 'Current Break';
+                    this.currentSessionTime.textContent = this.formatTimeShort(this.getCurrentSessionDuration());
+                } else {
+                    this.currentSession.style.display = 'none';
+                }
+
+                // Update totals
+                const totalWorkWithCurrent = this.totalWork + (this.isWorking && this.currentStartTime ? this.getCurrentSessionDuration() : 0);
+                const totalBreakWithCurrent = this.totalBreak + (!this.isWorking && this.currentStartTime ? this.getCurrentSessionDuration() : 0);
+
+                this.totalWorkTime.textContent = totalWorkWithCurrent > 0 ? this.formatTime(totalWorkWithCurrent) : '0 minutes';
+                this.totalBreakTime.textContent = totalBreakWithCurrent > 0 ? this.formatTime(totalBreakWithCurrent) : '0 minutes';
+
+                // Update timeline
+                this.updateTimeline();
+            }
+
+            // Update timeline display
+            updateTimeline() {
+                if (this.timeline.length === 0) {
+                    this.timelineContent.innerHTML = '<div class="empty-timeline">No activities recorded yet. Start working to begin tracking!</div>';
+                    return;
+                }
+
+                let html = '';
+                this.timeline.forEach(item => {
+                    const startTime = new Date(item.startTime);
+                    const timeString = startTime.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                    const dateString = startTime.toLocaleDateString();
+
+                    html += `
+                        <div class="timeline-item">
+                            <div class="timeline-dot ${item.type}"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-type ${item.type}">
+                                    ${item.type === 'work' ? 'Work Session' : 'Break Time'}
+                                </div>
+                                <div class="timeline-duration">
+                                    Duration: ${this.formatTime(item.duration)}
+                                </div>
+                            </div>
+                            <div class="timeline-time">
+                                ${timeString}<br>
+                                <small>${dateString}</small>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                this.timelineContent.innerHTML = html;
+            }
+
+            // Start the timer that updates the display every second
+            startDisplayTimer() {
+                setInterval(() => {
+                    if (this.currentStartTime) {
+                        this.updateDisplay();
+                    }
+                }, 1000);
+            }
+        }
+
+        // Initialize the application when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new WorkTracker();
+        });
+    </script>
+</body>
+</html>
