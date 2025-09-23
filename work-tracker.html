@@ -330,6 +330,7 @@
                 <div class="stat-card">
                     <h3>Total Work Time</h3>
                     <div id="totalWorkTime" class="time">0 minutes</div>
+                    <div id="totalWorkTimeHours" class="time" style="font-size: 1.2rem; color: #888; margin-top: 5px;">0,00 heures</div>
                 </div>
                 <div class="stat-card break-stat">
                     <h3>Total Break Time</h3>
@@ -379,6 +380,7 @@
                 this.currentSessionTitle = document.getElementById('currentSessionTitle');
                 this.currentSessionTime = document.getElementById('currentSessionTime');
                 this.totalWorkTime = document.getElementById('totalWorkTime');
+                this.totalWorkTimeHours = document.getElementById('totalWorkTimeHours');
                 this.totalBreakTime = document.getElementById('totalBreakTime');
                 this.timelineContent = document.getElementById('timelineContent');
 
@@ -497,6 +499,12 @@
                 return `${hours.toString().padStart(2, '0')}:${remainingMinutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
             }
 
+            // Format time in hours with 2 decimal places
+            formatHours(milliseconds) {
+                const hours = milliseconds / (1000 * 60 * 60);
+                return hours.toFixed(2).replace('.', ',');
+            }
+
             // Get current session duration
             getCurrentSessionDuration() {
                 if (!this.currentStartTime) return 0;
@@ -533,6 +541,7 @@
                 const totalBreakWithCurrent = this.totalBreak + (!this.isWorking && this.currentStartTime ? this.getCurrentSessionDuration() : 0);
 
                 this.totalWorkTime.textContent = totalWorkWithCurrent > 0 ? this.formatTime(totalWorkWithCurrent) : '0 minutes';
+                this.totalWorkTimeHours.textContent = totalWorkWithCurrent > 0 ? `${this.formatHours(totalWorkWithCurrent)} heures` : '0,00 heures';
                 this.totalBreakTime.textContent = totalBreakWithCurrent > 0 ? this.formatTime(totalBreakWithCurrent) : '0 minutes';
 
                 // Update timeline
