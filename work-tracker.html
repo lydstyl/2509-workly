@@ -424,7 +424,7 @@
               ></div>
             </div>
             <div id="goalRemaining" class="goal-remaining">
-              4.00 hours remaining
+              4 hours remaining
             </div>
           </div>
         </div>
@@ -744,16 +744,13 @@
           if (progress.isCompleted) {
             this.goalProgressFill.className = 'goal-progress-fill completed'
             this.goalRemaining.className = 'goal-remaining completed'
-            const overHours = progress.workedHours - this.dailyGoal
-            this.goalRemaining.textContent = `Objectif atteint! +${overHours
-              .toFixed(2)
-              .replace('.', ',')} hours`
+            const overMilliseconds = (progress.workedHours - this.dailyGoal) * 60 * 60 * 1000
+            this.goalRemaining.textContent = `Goal achieved! +${this.formatTime(overMilliseconds)}`
           } else {
             this.goalProgressFill.className = 'goal-progress-fill'
             this.goalRemaining.className = 'goal-remaining'
-            this.goalRemaining.textContent = `${progress.remainingHours
-              .toFixed(2)
-              .replace('.', ',')} hours remaining`
+            const remainingMilliseconds = progress.remainingHours * 60 * 60 * 1000
+            this.goalRemaining.textContent = `${this.formatTime(remainingMilliseconds)} remaining`
           }
         }
 
