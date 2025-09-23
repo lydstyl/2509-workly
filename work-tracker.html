@@ -232,6 +232,80 @@
             color: #667eea;
         }
 
+        .goal-section {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f5e8 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border-left: 5px solid #4caf50;
+        }
+
+        .goal-input-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .goal-input-group label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .goal-input {
+            padding: 10px 15px;
+            border: 2px solid #e0e6ff;
+            border-radius: 8px;
+            font-size: 1rem;
+            width: 80px;
+            text-align: center;
+        }
+
+        .goal-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .goal-progress {
+            text-align: center;
+        }
+
+        .goal-progress h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .goal-remaining {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #4caf50;
+        }
+
+        .goal-remaining.completed {
+            color: #ff6b6b;
+        }
+
+        .goal-progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e0e6ff;
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .goal-progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%);
+            transition: width 0.3s ease;
+            border-radius: 5px;
+        }
+
+        .goal-progress-fill.completed {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8a80 100%);
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             body {
@@ -325,6 +399,22 @@
                 <div id="currentSessionTime" class="current-time">00:00:00</div>
             </div>
 
+            <!-- Goal Section -->
+            <div class="goal-section">
+                <div class="goal-input-group">
+                    <label for="goalInput">Objectif quotidien:</label>
+                    <input type="number" id="goalInput" class="goal-input" min="0.5" max="24" step="0.5" value="4">
+                    <span>heures</span>
+                </div>
+                <div class="goal-progress">
+                    <h4>Progression vers l'objectif</h4>
+                    <div class="goal-progress-bar">
+                        <div id="goalProgressFill" class="goal-progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <div id="goalRemaining" class="goal-remaining">4,00 heures restantes</div>
+                </div>
+            </div>
+
             <!-- Statistics Section -->
             <div class="stats-section">
                 <div class="stat-card">
@@ -383,10 +473,17 @@
                 this.totalWorkTimeHours = document.getElementById('totalWorkTimeHours');
                 this.totalBreakTime = document.getElementById('totalBreakTime');
                 this.timelineContent = document.getElementById('timelineContent');
+                this.goalInput = document.getElementById('goalInput');
+                this.goalProgressFill = document.getElementById('goalProgressFill');
+                this.goalRemaining = document.getElementById('goalRemaining');
 
                 // Add event listeners
                 this.mainButton.addEventListener('click', () => this.toggleState());
                 this.resetButton.addEventListener('click', () => this.resetAllData());
+                this.goalInput.addEventListener('change', () => this.updateGoal());
+
+                // Set initial goal value
+                this.goalInput.value = this.dailyGoal;
             }
 
             // Load data from localStorage
@@ -399,6 +496,7 @@
                     this.timeline = data.timeline || [];
                     this.totalWork = data.totalWork || 0;
                     this.totalBreak = data.totalBreak || 0;
+                    this.dailyGoal = data.dailyGoal || 4;
                 } else {
                     // Default state
                     this.isWorking = false;
@@ -406,6 +504,7 @@
                     this.timeline = [];
                     this.totalWork = 0;
                     this.totalBreak = 0;
+                    this.dailyGoal = 4;
                 }
             }
 
@@ -416,7 +515,8 @@
                     currentStartTime: this.currentStartTime,
                     timeline: this.timeline,
                     totalWork: this.totalWork,
-                    totalBreak: this.totalBreak
+                    totalBreak: this.totalBreak,
+                    dailyGoal: this.dailyGoal
                 };
                 localStorage.setItem('workTracker', JSON.stringify(data));
             }
@@ -505,6 +605,29 @@
                 return hours.toFixed(2).replace('.', ',');
             }
 
+            // Update daily goal
+            updateGoal() {
+                this.dailyGoal = parseFloat(this.goalInput.value) || 4;
+                this.saveData();
+                this.updateDisplay();
+            }
+
+            // Calculate goal progress
+            getGoalProgress(totalWorkMilliseconds) {
+                const workedHours = totalWorkMilliseconds / (1000 * 60 * 60);
+                const goalHours = this.dailyGoal;
+                const progressPercent = Math.min((workedHours / goalHours) * 100, 100);
+                const remainingHours = Math.max(goalHours - workedHours, 0);
+                const isCompleted = workedHours >= goalHours;
+
+                return {
+                    progressPercent,
+                    remainingHours,
+                    isCompleted,
+                    workedHours
+                };
+            }
+
             // Get current session duration
             getCurrentSessionDuration() {
                 if (!this.currentStartTime) return 0;
@@ -544,8 +667,31 @@
                 this.totalWorkTimeHours.textContent = totalWorkWithCurrent > 0 ? `${this.formatHours(totalWorkWithCurrent)} heures` : '0,00 heures';
                 this.totalBreakTime.textContent = totalBreakWithCurrent > 0 ? this.formatTime(totalBreakWithCurrent) : '0 minutes';
 
+                // Update goal progress
+                this.updateGoalProgress(totalWorkWithCurrent);
+
                 // Update timeline
                 this.updateTimeline();
+            }
+
+            // Update goal progress display
+            updateGoalProgress(totalWorkMilliseconds) {
+                const progress = this.getGoalProgress(totalWorkMilliseconds);
+
+                // Update progress bar
+                this.goalProgressFill.style.width = `${progress.progressPercent}%`;
+
+                // Update progress bar color and remaining text
+                if (progress.isCompleted) {
+                    this.goalProgressFill.className = 'goal-progress-fill completed';
+                    this.goalRemaining.className = 'goal-remaining completed';
+                    const overHours = progress.workedHours - this.dailyGoal;
+                    this.goalRemaining.textContent = `Objectif atteint! +${overHours.toFixed(2).replace('.', ',')} heures`;
+                } else {
+                    this.goalProgressFill.className = 'goal-progress-fill';
+                    this.goalRemaining.className = 'goal-remaining';
+                    this.goalRemaining.textContent = `${progress.remainingHours.toFixed(2).replace('.', ',')} heures restantes`;
+                }
             }
 
             // Update timeline display
