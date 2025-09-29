@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Work Time Tracker</title>
+    <title>Workly</title>
     <style>
       * {
         margin: 0;
@@ -306,6 +306,27 @@
         background: linear-gradient(135deg, #ff6b6b 0%, #ff8a80 100%);
       }
 
+      .finish-estimation {
+        margin-top: 20px;
+        padding: 15px;
+        background: linear-gradient(135deg, #e8f4f8 0%, #f0f8ff 100%);
+        border-radius: 10px;
+        border-left: 4px solid #2196f3;
+        text-align: center;
+      }
+
+      .finish-estimation h4 {
+        color: #333;
+        margin-bottom: 8px;
+        font-size: 1rem;
+      }
+
+      .finish-time {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #2196f3;
+      }
+
       /* Responsive Design */
       @media (max-width: 768px) {
         body {
@@ -381,7 +402,7 @@
     <div class="container">
       <!-- Header Section -->
       <div class="header">
-        <h1>Work Time Tracker</h1>
+        <h1>Workly</h1>
         <p>Track your productivity and break times</p>
       </div>
 
@@ -425,6 +446,10 @@
             </div>
             <div id="goalRemaining" class="goal-remaining">
               4 hours remaining
+            </div>
+            <div id="finishEstimation" class="finish-estimation" style="display: none;">
+              <h4>Finish estimation:</h4>
+              <div id="finishTime" class="finish-time">--:--</div>
             </div>
           </div>
         </div>
@@ -502,6 +527,8 @@
           this.goalInput = document.getElementById('goalInput')
           this.goalProgressFill = document.getElementById('goalProgressFill')
           this.goalRemaining = document.getElementById('goalRemaining')
+          this.finishEstimation = document.getElementById('finishEstimation')
+          this.finishTime = document.getElementById('finishTime')
 
           // Add event listeners
           this.mainButton.addEventListener('click', () => this.toggleState())
@@ -666,6 +693,22 @@
           }
         }
 
+        // Calculate finish time estimation
+        calculateFinishTime(remainingMilliseconds) {
+          if (remainingMilliseconds <= 0) {
+            return null
+          }
+
+          const now = new Date()
+          const finishTime = new Date(now.getTime() + remainingMilliseconds)
+
+          return finishTime.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          })
+        }
+
         // Get current session duration
         getCurrentSessionDuration() {
           if (!this.currentStartTime) return 0
@@ -746,11 +789,25 @@
             this.goalRemaining.className = 'goal-remaining completed'
             const overMilliseconds = (progress.workedHours - this.dailyGoal) * 60 * 60 * 1000
             this.goalRemaining.textContent = `Goal achieved! +${this.formatTime(overMilliseconds)}`
+            this.finishEstimation.style.display = 'none'
           } else {
             this.goalProgressFill.className = 'goal-progress-fill'
             this.goalRemaining.className = 'goal-remaining'
             const remainingMilliseconds = progress.remainingHours * 60 * 60 * 1000
             this.goalRemaining.textContent = `${this.formatTime(remainingMilliseconds)} remaining`
+
+            // Show finish estimation only if currently working and there's remaining time
+            if (this.isWorking && this.currentStartTime && remainingMilliseconds > 0) {
+              const finishTime = this.calculateFinishTime(remainingMilliseconds)
+              if (finishTime) {
+                this.finishEstimation.style.display = 'block'
+                this.finishTime.textContent = finishTime
+              } else {
+                this.finishEstimation.style.display = 'none'
+              }
+            } else {
+              this.finishEstimation.style.display = 'none'
+            }
           }
         }
 
