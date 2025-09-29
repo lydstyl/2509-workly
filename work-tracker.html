@@ -83,6 +83,35 @@
         box-shadow: 0 15px 30px rgba(252, 182, 159, 0.4);
       }
 
+      .stop-resume-button {
+        background: #ff9800;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 1rem;
+        margin-left: 15px;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3);
+      }
+
+      .stop-resume-button:hover {
+        background: #f57c00;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(255, 152, 0, 0.4);
+      }
+
+      .stop-resume-button.resume-mode {
+        background: #4caf50;
+        box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+      }
+
+      .stop-resume-button.resume-mode:hover {
+        background: #45a049;
+        box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+      }
+
       .reset-button {
         background: #ff6b6b;
         color: white;
@@ -383,6 +412,12 @@
           padding: 15px;
         }
 
+        .stop-resume-button {
+          margin-left: 0;
+          margin-top: 10px;
+          width: 100%;
+        }
+
         .reset-button {
           margin-left: 0;
           margin-top: 10px;
@@ -411,6 +446,7 @@
         <!-- Control Section -->
         <div class="control-section">
           <button id="mainButton" class="main-button">Start Working</button>
+          <button id="stopResumeButton" class="stop-resume-button" style="display: none;">Stop</button>
           <button id="resetButton" class="reset-button">Reset All Data</button>
         </div>
 
@@ -512,6 +548,7 @@
         // Initialize DOM element references
         initializeElements() {
           this.mainButton = document.getElementById('mainButton')
+          this.stopResumeButton = document.getElementById('stopResumeButton')
           this.resetButton = document.getElementById('resetButton')
           this.currentSession = document.getElementById('currentSession')
           this.currentSessionTitle = document.getElementById(
@@ -532,6 +569,7 @@
 
           // Add event listeners
           this.mainButton.addEventListener('click', () => this.toggleState())
+          this.stopResumeButton.addEventListener('click', () => this.toggleBreakPause())
           this.resetButton.addEventListener('click', () => this.resetAllData())
           this.goalInput.addEventListener('change', () => this.updateGoal())
 
@@ -550,6 +588,7 @@
             this.totalWork = data.totalWork || 0
             this.totalBreak = data.totalBreak || 0
             this.dailyGoal = data.dailyGoal || 4
+            this.isBreakPaused = data.isBreakPaused || false
           } else {
             // Default state
             this.isWorking = false
@@ -558,6 +597,7 @@
             this.totalWork = 0
             this.totalBreak = 0
             this.dailyGoal = 4
+            this.isBreakPaused = false
           }
         }
 
@@ -569,7 +609,8 @@
             timeline: this.timeline,
             totalWork: this.totalWork,
             totalBreak: this.totalBreak,
-            dailyGoal: this.dailyGoal
+            dailyGoal: this.dailyGoal,
+            isBreakPaused: this.isBreakPaused
           }
           localStorage.setItem('workTracker', JSON.stringify(data))
         }
@@ -578,30 +619,68 @@
         toggleState() {
           const now = Date.now()
 
-          if (this.currentStartTime) {
-            // End current session
-            const duration = now - this.currentStartTime
-            const sessionType = this.isWorking ? 'work' : 'break'
+          if (!this.isWorking) {
+            // Start working
+            this.isWorking = true
+            this.currentStartTime = now
+            this.isBreakPaused = false
+          } else {
+            // Take a break (but don't start counting break time yet)
+            if (this.currentStartTime) {
+              // End work session
+              const duration = now - this.currentStartTime
 
-            // Add to timeline
-            this.timeline.unshift({
-              type: sessionType,
-              duration: duration,
-              startTime: this.currentStartTime,
-              endTime: now
-            })
+              // Add work session to timeline
+              this.timeline.unshift({
+                type: 'work',
+                duration: duration,
+                startTime: this.currentStartTime,
+                endTime: now
+              })
 
-            // Update totals
-            if (this.isWorking) {
+              // Update work total
               this.totalWork += duration
-            } else {
-              this.totalBreak += duration
             }
+
+            // Switch to break mode but don't start counting yet
+            this.isWorking = false
+            this.currentStartTime = null
+            this.isBreakPaused = true // Break is paused by default
           }
 
-          // Toggle state
-          this.isWorking = !this.isWorking
-          this.currentStartTime = now
+          // Save and update display
+          this.saveData()
+          this.updateDisplay()
+        }
+
+        // Toggle break pause/resume
+        toggleBreakPause() {
+          const now = Date.now()
+
+          if (this.isBreakPaused) {
+            // Resume break - start counting break time
+            this.isBreakPaused = false
+            this.currentStartTime = now
+          } else {
+            // Stop break - pause the break timer
+            if (this.currentStartTime) {
+              const duration = now - this.currentStartTime
+
+              // Add break session to timeline
+              this.timeline.unshift({
+                type: 'break',
+                duration: duration,
+                startTime: this.currentStartTime,
+                endTime: now
+              })
+
+              // Update break total
+              this.totalBreak += duration
+            }
+
+            this.isBreakPaused = true
+            this.currentStartTime = null
+          }
 
           // Save and update display
           this.saveData()
@@ -620,6 +699,7 @@
             this.timeline = []
             this.totalWork = 0
             this.totalBreak = 0
+            this.isBreakPaused = false
 
             this.saveData()
             this.updateDisplay()
@@ -717,22 +797,28 @@
 
         // Update all display elements
         updateDisplay() {
-          // Update main button
-          if (this.currentStartTime) {
-            if (this.isWorking) {
-              this.mainButton.textContent = 'Take a Break'
-              this.mainButton.className = 'main-button break-mode'
-            } else {
-              this.mainButton.textContent = 'Start Working'
-              this.mainButton.className = 'main-button'
-            }
+          // Update main button and stop/resume button
+          if (this.isWorking) {
+            this.mainButton.textContent = 'Take a Break'
+            this.mainButton.className = 'main-button break-mode'
+            this.stopResumeButton.style.display = 'none'
           } else {
             this.mainButton.textContent = 'Start Working'
             this.mainButton.className = 'main-button'
+
+            // Show stop/resume button only when in break mode
+            this.stopResumeButton.style.display = 'inline-block'
+            if (this.isBreakPaused) {
+              this.stopResumeButton.textContent = 'Resume'
+              this.stopResumeButton.className = 'stop-resume-button resume-mode'
+            } else {
+              this.stopResumeButton.textContent = 'Stop'
+              this.stopResumeButton.className = 'stop-resume-button'
+            }
           }
 
           // Update current session display
-          if (this.currentStartTime) {
+          if (this.currentStartTime && (this.isWorking || !this.isBreakPaused)) {
             this.currentSession.style.display = 'block'
             this.currentSessionTitle.textContent = this.isWorking
               ? 'Current Work Session'
@@ -752,7 +838,7 @@
               : 0)
           const totalBreakWithCurrent =
             this.totalBreak +
-            (!this.isWorking && this.currentStartTime
+            (!this.isWorking && this.currentStartTime && !this.isBreakPaused
               ? this.getCurrentSessionDuration()
               : 0)
 
