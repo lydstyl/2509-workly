@@ -642,10 +642,10 @@
               this.totalWork += duration
             }
 
-            // Switch to break mode but don't start counting yet
+            // Switch to break mode and start counting break time
             this.isWorking = false
-            this.currentStartTime = null
-            this.isBreakPaused = true // Break is paused by default
+            this.currentStartTime = now
+            this.isBreakPaused = false // Break is running by default
           }
 
           // Save and update display
