@@ -1,0 +1,11 @@
+services:
+  workly:
+    build: .
+    container_name: 2509-workly
+    restart: unless-stopped
+    ports:
+      - "3013:3013"
+    environment:
+      - TZ=Europe/Paris
+      - NODE_ENV=production
+      - PORT=3013

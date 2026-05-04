@@ -848,8 +848,8 @@
               : '0 minutes'
           this.totalWorkTimeHours.textContent =
             totalWorkWithCurrent > 0
-              ? `${this.formatHours(totalWorkWithCurrent)} heures`
-              : '0,00 heures'
+              ? `${this.formatHours(totalWorkWithCurrent)} heures · ${this.formatHours(totalWorkWithCurrent * 1.1)} heures (+10%)`
+              : '0,00 heures · 0,00 heures (+10%)'
           this.totalBreakTime.textContent =
             totalBreakWithCurrent > 0
               ? this.formatTime(totalBreakWithCurrent)
