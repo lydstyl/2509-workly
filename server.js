@@ -1,8 +1,23 @@
 const express = require('express')
 const path = require('path')
+const pkg = require('./package.json')
 
 const app = express()
 const PORT = process.env.PORT || 3005
+
+/**
+ * Sonde de vie + marqueur de version : sert à vérifier qu'un déploiement
+ * expose bien le nouveau code (et pas l'image précédente).
+ */
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    app: pkg.name,
+    version: pkg.version,
+    features: ['chrono-timeline', 'segment-tooltip', 'timeline-axis'],
+    uptime_s: Math.round(process.uptime())
+  })
+})
 
 // Serve static files from the current directory
 app.use(express.static(path.join(__dirname)))

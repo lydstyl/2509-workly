@@ -1,17 +1,23 @@
 {
   "name": "2509-workly",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test test/unit/*.test.js",
+    "test:e2e": "playwright test --config e2e/playwright.config.js",
+    "serve:test": "PORT=3099 node server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "playwright": "1.62.0"
   }
 }

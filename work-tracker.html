@@ -431,6 +431,194 @@
         font-style: italic;
         padding: 40px 20px;
       }
+
+      /* ---------- Frise chronologique (travail / pause) ---------- */
+
+      .chrono-section {
+        margin-top: 40px;
+      }
+
+      .chrono-legend {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #666;
+        font-size: 0.85rem;
+      }
+
+      .legend-swatch {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        display: inline-block;
+      }
+
+      .legend-swatch.work {
+        background: #667eea;
+      }
+
+      .legend-swatch.break {
+        background: #fcb69f;
+      }
+
+      .chrono-wrap {
+        position: relative;
+        background: #f8f9ff;
+        border-radius: 15px;
+        padding: 18px 16px 10px;
+      }
+
+      .chrono-bar {
+        display: flex;
+        width: 100%;
+        height: 38px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #eef1ff;
+        cursor: help;
+      }
+
+      .chrono-seg {
+        flex-basis: 0;
+        min-width: 3px;
+        height: 100%;
+        box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        transition: filter 0.15s ease;
+      }
+
+      .chrono-seg.work {
+        background: linear-gradient(180deg, #7b8ff0 0%, #667eea 100%);
+      }
+
+      .chrono-seg.break {
+        background: linear-gradient(180deg, #ffd3bd 0%, #fcb69f 100%);
+      }
+
+      .chrono-seg.live {
+        animation: chrono-pulse 1.6s ease-in-out infinite;
+      }
+
+      .chrono-seg:hover,
+      .chrono-seg:focus {
+        filter: brightness(1.12) saturate(1.15);
+        outline: 2px solid #4facfe;
+        outline-offset: -2px;
+      }
+
+      .chrono-seg-label {
+        color: rgba(255, 255, 255, 0.95);
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        padding: 0 6px;
+        pointer-events: none;
+      }
+
+      .chrono-seg.break .chrono-seg-label {
+        color: #7a4a35;
+      }
+
+      @keyframes chrono-pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.65;
+        }
+      }
+
+      .chrono-axis {
+        position: relative;
+        height: 22px;
+        margin-top: 6px;
+        border-top: 1px solid #e0e6ff;
+      }
+
+      .chrono-tick {
+        position: absolute;
+        top: 0;
+        transform: translateX(-50%);
+        color: #98a0c0;
+        font-size: 0.7rem;
+        white-space: nowrap;
+      }
+
+      .chrono-tick::before {
+        content: '';
+        display: block;
+        width: 1px;
+        height: 4px;
+        background: #ccd4f5;
+        margin: 0 auto 2px;
+      }
+
+      .chrono-summary {
+        color: #666;
+        font-size: 0.85rem;
+        margin-top: 4px;
+      }
+
+      .chrono-empty {
+        color: #999;
+        font-style: italic;
+        font-size: 0.9rem;
+        padding: 6px 2px 10px;
+        display: none;
+      }
+
+      .chrono-tooltip {
+        position: fixed;
+        z-index: 999;
+        pointer-events: none;
+        background: rgba(28, 28, 40, 0.96);
+        color: #f4f4ff;
+        padding: 10px 12px;
+        border-radius: 10px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+        font-size: 0.82rem;
+        line-height: 1.45;
+        max-width: 260px;
+        opacity: 0;
+        transition: opacity 0.12s ease;
+      }
+
+      .chrono-tooltip.visible {
+        opacity: 1;
+      }
+
+      .chrono-tooltip .tip-head {
+        font-weight: 700;
+        margin-bottom: 4px;
+        font-size: 0.85rem;
+      }
+
+      .chrono-tooltip .tip-head.work {
+        color: #a9b7ff;
+      }
+
+      .chrono-tooltip .tip-head.break {
+        color: #ffcdb8;
+      }
+
+      .chrono-tooltip .tip-line strong {
+        color: #fff;
+      }
+
+      .chrono-tooltip .tip-muted {
+        color: #a8a8c0;
+        font-size: 0.76rem;
+      }
     </style>
   </head>
   <body>
@@ -509,6 +697,31 @@
           </div>
         </div>
 
+        <!-- Chronological Timeline (frise proportionnelle travail / pause) -->
+        <div class="chrono-section">
+          <div class="timeline-header">
+            <h3>Chronological Timeline</h3>
+            <div class="chrono-legend">
+              <span class="legend-item"><span class="legend-swatch work"></span>Work</span>
+              <span class="legend-item"><span class="legend-swatch break"></span>Break</span>
+            </div>
+          </div>
+          <div class="chrono-wrap" id="chronoWrap">
+            <div
+              class="chrono-bar"
+              id="chronoBar"
+              role="list"
+              aria-label="Work and break timeline, width proportional to duration"
+            ></div>
+            <div class="chrono-axis" id="chronoAxis"></div>
+            <div class="chrono-summary" id="chronoSummary"></div>
+            <div class="chrono-empty" id="chronoEmpty">
+              No activities recorded yet. Start working to draw your timeline!
+            </div>
+          </div>
+          <div class="chrono-tooltip" id="chronoTooltip" role="tooltip" hidden></div>
+        </div>
+
         <!-- Timeline Section -->
         <div class="timeline-section">
           <div class="timeline-header">
@@ -525,436 +738,43 @@
       </div>
     </div>
 
+    <script src="work-tracker.js"></script>
     <script>
-      // Application state management
-      class WorkTracker {
-        constructor() {
-          // Load data from localStorage or initialize default state
-          this.loadData()
+      // Amorçage : toute la logique vit dans work-tracker.js (testable en Node),
+      // ici on ne fait que la brancher sur le DOM.
+      ;(function () {
+        const Workly = window.Workly
 
-          // Timer for current session
-          this.currentTimer = null
-
-          // Initialize UI elements
-          this.initializeElements()
-
-          // Start the display update timer
-          this.startDisplayTimer()
-
-          // Update initial display
-          this.updateDisplay()
+        // Horloge injectable : les tests e2e la pilotent via window.__WORKLY_NOW__.
+        const clock = function () {
+          return typeof window.__WORKLY_NOW__ === 'number'
+            ? window.__WORKLY_NOW__
+            : Date.now()
         }
 
-        // Initialize DOM element references
-        initializeElements() {
-          this.mainButton = document.getElementById('mainButton')
-          this.stopResumeButton = document.getElementById('stopResumeButton')
-          this.resetButton = document.getElementById('resetButton')
-          this.currentSession = document.getElementById('currentSession')
-          this.currentSessionTitle = document.getElementById(
-            'currentSessionTitle'
-          )
-          this.currentSessionTime =
-            document.getElementById('currentSessionTime')
-          this.totalWorkTime = document.getElementById('totalWorkTime')
-          this.totalWorkTimeHours =
-            document.getElementById('totalWorkTimeHours')
-          this.totalBreakTime = document.getElementById('totalBreakTime')
-          this.timelineContent = document.getElementById('timelineContent')
-          this.goalInput = document.getElementById('goalInput')
-          this.goalProgressFill = document.getElementById('goalProgressFill')
-          this.goalRemaining = document.getElementById('goalRemaining')
-          this.finishEstimation = document.getElementById('finishEstimation')
-          this.finishTime = document.getElementById('finishTime')
-
-          // Add event listeners
-          this.mainButton.addEventListener('click', () => this.toggleState())
-          this.stopResumeButton.addEventListener('click', () => this.toggleBreakPause())
-          this.resetButton.addEventListener('click', () => this.resetAllData())
-          this.goalInput.addEventListener('change', () => this.updateGoal())
-
-          // Set initial goal value
-          this.goalInput.value = this.dailyGoal
-        }
-
-        // Load data from localStorage
-        loadData() {
-          const savedData = localStorage.getItem('workTracker')
-          if (savedData) {
-            const data = JSON.parse(savedData)
-            this.isWorking = data.isWorking || false
-            this.currentStartTime = data.currentStartTime || null
-            this.timeline = data.timeline || []
-            this.totalWork = data.totalWork || 0
-            this.totalBreak = data.totalBreak || 0
-            this.dailyGoal = data.dailyGoal || 4
-            this.isBreakPaused = data.isBreakPaused || false
-          } else {
-            // Default state
-            this.isWorking = false
-            this.currentStartTime = null
-            this.timeline = []
-            this.totalWork = 0
-            this.totalBreak = 0
-            this.dailyGoal = 4
-            this.isBreakPaused = false
-          }
-        }
-
-        // Save data to localStorage
-        saveData() {
-          const data = {
-            isWorking: this.isWorking,
-            currentStartTime: this.currentStartTime,
-            timeline: this.timeline,
-            totalWork: this.totalWork,
-            totalBreak: this.totalBreak,
-            dailyGoal: this.dailyGoal,
-            isBreakPaused: this.isBreakPaused
-          }
-          localStorage.setItem('workTracker', JSON.stringify(data))
-        }
-
-        // Toggle between work and break states
-        toggleState() {
-          const now = Date.now()
-
-          if (!this.isWorking) {
-            // Start working
-            this.isWorking = true
-            this.currentStartTime = now
-            this.isBreakPaused = false
-          } else {
-            // Take a break (but don't start counting break time yet)
-            if (this.currentStartTime) {
-              // End work session
-              const duration = now - this.currentStartTime
-
-              // Add work session to timeline
-              this.timeline.unshift({
-                type: 'work',
-                duration: duration,
-                startTime: this.currentStartTime,
-                endTime: now
-              })
-
-              // Update work total
-              this.totalWork += duration
-            }
-
-            // Switch to break mode and start counting break time
-            this.isWorking = false
-            this.currentStartTime = now
-            this.isBreakPaused = false // Break is running by default
-          }
-
-          // Save and update display
-          this.saveData()
-          this.updateDisplay()
-        }
-
-        // Toggle break pause/resume
-        toggleBreakPause() {
-          const now = Date.now()
-
-          if (this.isBreakPaused) {
-            // Resume break - start counting break time
-            this.isBreakPaused = false
-            this.currentStartTime = now
-          } else {
-            // Stop break - pause the break timer
-            if (this.currentStartTime) {
-              const duration = now - this.currentStartTime
-
-              // Add break session to timeline
-              this.timeline.unshift({
-                type: 'break',
-                duration: duration,
-                startTime: this.currentStartTime,
-                endTime: now
-              })
-
-              // Update break total
-              this.totalBreak += duration
-            }
-
-            this.isBreakPaused = true
-            this.currentStartTime = null
-          }
-
-          // Save and update display
-          this.saveData()
-          this.updateDisplay()
-        }
-
-        // Reset all data
-        resetAllData() {
-          if (
-            confirm(
-              'Are you sure you want to reset all tracking data? This cannot be undone.'
-            )
-          ) {
-            this.isWorking = false
-            this.currentStartTime = null
-            this.timeline = []
-            this.totalWork = 0
-            this.totalBreak = 0
-            this.isBreakPaused = false
-
-            this.saveData()
-            this.updateDisplay()
-          }
-        }
-
-        // Format milliseconds to human readable time
-        formatTime(milliseconds) {
-          const seconds = Math.floor(milliseconds / 1000)
-          const minutes = Math.floor(seconds / 60)
-          const hours = Math.floor(minutes / 60)
-
-          const remainingMinutes = minutes % 60
-          const remainingSeconds = seconds % 60
-
-          if (hours > 0) {
-            return `${hours} hour${
-              hours !== 1 ? 's' : ''
-            } ${remainingMinutes} minute${
-              remainingMinutes !== 1 ? 's' : ''
-            } ${remainingSeconds} second${remainingSeconds !== 1 ? 's' : ''}`
-          } else if (minutes > 0) {
-            return `${minutes} minute${
-              minutes !== 1 ? 's' : ''
-            } ${remainingSeconds} second${remainingSeconds !== 1 ? 's' : ''}`
-          } else {
-            return `${seconds} second${seconds !== 1 ? 's' : ''}`
-          }
-        }
-
-        // Format time for display (HH:MM:SS)
-        formatTimeShort(milliseconds) {
-          const seconds = Math.floor(milliseconds / 1000)
-          const minutes = Math.floor(seconds / 60)
-          const hours = Math.floor(minutes / 60)
-
-          const remainingMinutes = minutes % 60
-          const remainingSeconds = seconds % 60
-
-          return `${hours.toString().padStart(2, '0')}:${remainingMinutes
-            .toString()
-            .padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
-        }
-
-        // Format time in hours with 2 decimal places
-        formatHours(milliseconds) {
-          const hours = milliseconds / (1000 * 60 * 60)
-          return hours.toFixed(2).replace('.', ',')
-        }
-
-        // Update daily goal
-        updateGoal() {
-          this.dailyGoal = parseFloat(this.goalInput.value) || 4
-          this.saveData()
-          this.updateDisplay()
-        }
-
-        // Calculate goal progress
-        getGoalProgress(totalWorkMilliseconds) {
-          const workedHours = totalWorkMilliseconds / (1000 * 60 * 60)
-          const goalHours = this.dailyGoal
-          const progressPercent = Math.min((workedHours / goalHours) * 100, 100)
-          const remainingHours = Math.max(goalHours - workedHours, 0)
-          const isCompleted = workedHours >= goalHours
-
-          return {
-            progressPercent,
-            remainingHours,
-            isCompleted,
-            workedHours
-          }
-        }
-
-        // Calculate finish time estimation
-        calculateFinishTime(remainingMilliseconds) {
-          if (remainingMilliseconds <= 0) {
-            return null
-          }
-
-          const now = new Date()
-          const finishTime = new Date(now.getTime() + remainingMilliseconds)
-
-          return finishTime.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
+        function boot() {
+          const core = new Workly.WorkTrackerCore({
+            storage: window.localStorage,
+            now: clock
           })
-        }
+          const app = new Workly.WorklyApp(core)
 
-        // Get current session duration
-        getCurrentSessionDuration() {
-          if (!this.currentStartTime) return 0
-          return Date.now() - this.currentStartTime
-        }
-
-        // Update all display elements
-        updateDisplay() {
-          // Update main button and stop/resume button
-          if (this.isWorking) {
-            this.mainButton.textContent = 'Take a Break'
-            this.mainButton.className = 'main-button break-mode'
-            this.stopResumeButton.style.display = 'none'
-          } else {
-            this.mainButton.textContent = 'Start Working'
-            this.mainButton.className = 'main-button'
-
-            // Show stop/resume button only when in break mode
-            this.stopResumeButton.style.display = 'inline-block'
-            if (this.isBreakPaused) {
-              this.stopResumeButton.textContent = 'Resume'
-              this.stopResumeButton.className = 'stop-resume-button resume-mode'
-            } else {
-              this.stopResumeButton.textContent = 'Stop'
-              this.stopResumeButton.className = 'stop-resume-button'
-            }
+          // Exposé pour les tests (unitaires e2e) et le débogage.
+          window.worklyCore = core
+          window.worklyApp = app
+          window.worklySetNow = function (ts) {
+            window.__WORKLY_NOW__ = ts
+            app.refresh()
           }
-
-          // Update current session display
-          if (this.currentStartTime && (this.isWorking || !this.isBreakPaused)) {
-            this.currentSession.style.display = 'block'
-            this.currentSessionTitle.textContent = this.isWorking
-              ? 'Current Work Session'
-              : 'Current Break'
-            this.currentSessionTime.textContent = this.formatTimeShort(
-              this.getCurrentSessionDuration()
-            )
-          } else {
-            this.currentSession.style.display = 'none'
-          }
-
-          // Update totals
-          const totalWorkWithCurrent =
-            this.totalWork +
-            (this.isWorking && this.currentStartTime
-              ? this.getCurrentSessionDuration()
-              : 0)
-          const totalBreakWithCurrent =
-            this.totalBreak +
-            (!this.isWorking && this.currentStartTime && !this.isBreakPaused
-              ? this.getCurrentSessionDuration()
-              : 0)
-
-          this.totalWorkTime.textContent =
-            totalWorkWithCurrent > 0
-              ? this.formatTime(totalWorkWithCurrent)
-              : '0 minutes'
-          this.totalWorkTimeHours.textContent =
-            totalWorkWithCurrent > 0
-              ? `${this.formatHours(totalWorkWithCurrent)} heures · ${this.formatHours(totalWorkWithCurrent * 1.1)} heures (+10%)`
-              : '0,00 heures · 0,00 heures (+10%)'
-          this.totalBreakTime.textContent =
-            totalBreakWithCurrent > 0
-              ? this.formatTime(totalBreakWithCurrent)
-              : '0 minutes'
-
-          // Update goal progress
-          this.updateGoalProgress(totalWorkWithCurrent)
-
-          // Update timeline
-          this.updateTimeline()
+          return app
         }
 
-        // Update goal progress display
-        updateGoalProgress(totalWorkMilliseconds) {
-          const progress = this.getGoalProgress(totalWorkMilliseconds)
-
-          // Update progress bar
-          this.goalProgressFill.style.width = `${progress.progressPercent}%`
-
-          // Update progress bar color and remaining text
-          if (progress.isCompleted) {
-            this.goalProgressFill.className = 'goal-progress-fill completed'
-            this.goalRemaining.className = 'goal-remaining completed'
-            const overMilliseconds = (progress.workedHours - this.dailyGoal) * 60 * 60 * 1000
-            this.goalRemaining.textContent = `Goal achieved! +${this.formatTime(overMilliseconds)}`
-            this.finishEstimation.style.display = 'none'
-          } else {
-            this.goalProgressFill.className = 'goal-progress-fill'
-            this.goalRemaining.className = 'goal-remaining'
-            const remainingMilliseconds = progress.remainingHours * 60 * 60 * 1000
-            this.goalRemaining.textContent = `${this.formatTime(remainingMilliseconds)} remaining`
-
-            // Show finish estimation only if currently working and there's remaining time
-            if (this.isWorking && this.currentStartTime && remainingMilliseconds > 0) {
-              const finishTime = this.calculateFinishTime(remainingMilliseconds)
-              if (finishTime) {
-                this.finishEstimation.style.display = 'block'
-                this.finishTime.textContent = finishTime
-              } else {
-                this.finishEstimation.style.display = 'none'
-              }
-            } else {
-              this.finishEstimation.style.display = 'none'
-            }
-          }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', boot)
+        } else {
+          boot()
         }
-
-        // Update timeline display
-        updateTimeline() {
-          if (this.timeline.length === 0) {
-            this.timelineContent.innerHTML =
-              '<div class="empty-timeline">No activities recorded yet. Start working to begin tracking!</div>'
-            return
-          }
-
-          let html = ''
-          this.timeline.forEach((item) => {
-            const startTime = new Date(item.startTime)
-            const timeString = startTime.toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true
-            })
-            const dateString = startTime.toLocaleDateString()
-
-            html += `
-                        <div class="timeline-item">
-                            <div class="timeline-dot ${item.type}"></div>
-                            <div class="timeline-content">
-                                <div class="timeline-type ${item.type}">
-                                    ${
-                                      item.type === 'work'
-                                        ? 'Work Session'
-                                        : 'Break Time'
-                                    }
-                                </div>
-                                <div class="timeline-duration">
-                                    Duration: ${this.formatTime(item.duration)}
-                                </div>
-                            </div>
-                            <div class="timeline-time">
-                                ${timeString}<br>
-                                <small>${dateString}</small>
-                            </div>
-                        </div>
-                    `
-          })
-
-          this.timelineContent.innerHTML = html
-        }
-
-        // Start the timer that updates the display every second
-        startDisplayTimer() {
-          setInterval(() => {
-            if (this.currentStartTime) {
-              this.updateDisplay()
-            }
-          }, 1000)
-        }
-      }
-
-      // Initialize the application when the page loads
-      document.addEventListener('DOMContentLoaded', () => {
-        new WorkTracker()
-      })
+      })()
     </script>
   </body>
 </html>
