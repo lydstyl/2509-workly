@@ -169,3 +169,63 @@ test('buildTimeline : minDurationMs configurable', () => {
   assert.equal(buildTimeline(timeline, null, { minDurationMs: 10 * SECOND }).segments.length, 0)
   assert.equal(buildTimeline(timeline, null, { minDurationMs: 10 * SECOND }).droppedMs, 4 * SECOND)
 })
+
+/* ------------------------------------------------------------------ *
+ * Plancher de largeur : une pause courte doit rester VISIBLE
+ * ------------------------------------------------------------------ */
+
+test('plancher : une pause de 30 s dans 5 h garde au moins MIN_SEGMENT_PCT de la barre', () => {
+  const timeline = [
+    seg('work', T0 + 4 * HOUR + 30 * SECOND, HOUR),
+    seg('work', T0, 4 * HOUR),
+    seg('break', T0 + 4 * HOUR, 30 * SECOND)
+  ]
+  const model = buildTimeline(timeline, null)
+  const brk = model.segments.find((s) => s.type === 'break')
+
+  // sans plancher : 30 s / 5 h = 0,17 % (≈ 1 px) ⇒ invisible
+  assert.ok(brk.widthPct >= W.MIN_SEGMENT_PCT - 1e-9)
+  const sum = model.segments.reduce((acc, s) => acc + s.widthPct, 0)
+  assert.ok(Math.abs(sum - 100) < 1e-6)
+  // les blocs de travail restent très majoritaires
+  const work = model.segments.filter((s) => s.type === 'work')
+  assert.ok(work.reduce((acc, s) => acc + s.widthPct, 0) > 94)
+})
+
+test('plancher : budget total borné quand les pauses sont nombreuses', () => {
+  const timeline = [seg('work', T0, 5 * HOUR)]
+  for (let i = 0; i < 12; i += 1) {
+    timeline.push(seg('break', T0 + HOUR + i * 10 * MINUTE, 10 * SECOND))
+  }
+  const model = buildTimeline(timeline, null)
+  const breakPct = model.segments
+    .filter((s) => s.type === 'break')
+    .reduce((acc, s) => acc + s.widthPct, 0)
+
+  assert.ok(breakPct <= W.FLOOR_BUDGET_PCT + 1e-6, `budget dépassé : ${breakPct} %`)
+  assert.ok(breakPct > 10, `pauses trop effacées : ${breakPct} %`)
+  const sum = model.segments.reduce((acc, s) => acc + s.widthPct, 0)
+  assert.ok(Math.abs(sum - 100) < 1e-6)
+})
+
+test('plancher : aucun effet quand tous les segments dépassent le plancher', () => {
+  const durations = [10 * HOUR, HOUR]
+  assert.deepEqual(W.computeWidths(durations, 11 * HOUR), [(10 / 11) * 100, (1 / 11) * 100])
+})
+
+test('plancher : les repères restent sous le bloc élargi (même géométrie)', () => {
+  // 30 s de pause à 10:00, puis 2 h de travail ; le bloc pause est élargi,
+  // donc 10:00 doit tomber au début de la pause et 11:00 dans le travail.
+  const timeline = [seg('work', T0 + 30 * SECOND, 2 * HOUR), seg('break', T0 + 30 * SECOND - 30 * SECOND, 30 * SECOND)]
+  const model = buildTimeline(timeline, null)
+  const brk = model.segments[0]
+  const work = model.segments[1]
+
+  assert.ok(brk.type === 'break' && work.type === 'work')
+  assert.ok(Math.abs(W.timeToPct(model.segments, model.totalMs, brk.startTime) - brk.startPct) < 1e-9)
+  assert.ok(Math.abs(W.timeToPct(model.segments, model.totalMs, work.startTime) - work.startPct) < 1e-9)
+  const midWork = W.timeToPct(model.segments, model.totalMs, work.startTime + HOUR)
+  assert.ok(midWork > work.startPct && midWork < work.startPct + work.widthPct)
+  // la pause élargie ne doit pas dépasser le bloc de travail
+  assert.ok(brk.widthPct < work.widthPct)
+})

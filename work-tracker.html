@@ -464,7 +464,7 @@
       }
 
       .legend-swatch.break {
-        background: #fcb69f;
+        background: repeating-linear-gradient(135deg, #ffd3bd 0 4px, #f7a179 4px 8px);
       }
 
       .chrono-wrap {
@@ -486,7 +486,8 @@
 
       .chrono-seg {
         flex-basis: 0;
-        min-width: 3px;
+        flex-shrink: 0;
+        min-width: 2px;
         height: 100%;
         box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.55);
         display: flex;
@@ -500,8 +501,14 @@
         background: linear-gradient(180deg, #7b8ff0 0%, #667eea 100%);
       }
 
+      /* Hachures : une pause de quelques secondes reste identifiable même
+         quand sa largeur est réduite à quelques pixels. */
       .chrono-seg.break {
-        background: linear-gradient(180deg, #ffd3bd 0%, #fcb69f 100%);
+        background: repeating-linear-gradient(
+          135deg,
+          #ffd3bd 0 4px,
+          #f7a179 4px 8px
+        );
       }
 
       .chrono-seg.live {

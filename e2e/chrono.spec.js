@@ -5,7 +5,7 @@
  * aucun test n'attend de vraies minutes.
  */
 const { test, expect } = require('playwright/test')
-const { HOUR, MINUTE, at, stateWith, seed, consoleGuard, measureSegments } = require('./helpers')
+const { HOUR, MINUTE, SECOND, at, stateWith, seed, consoleGuard, measureSegments } = require('./helpers')
 
 /** Scénario de référence : 10 h de travail puis 1 h de pause (ratio 1/10). */
 const WORK_10H = { type: 'work', startTime: at(6, 0), endTime: at(16, 0), duration: 10 * HOUR }
@@ -213,4 +213,47 @@ test('Reset All Data vide aussi la frise', async ({ page }) => {
   await expect(page.locator('#chronoBar')).toBeHidden()
   await expect(page.locator('#chronoEmpty')).toBeVisible()
   await expect(page.locator('#chronoBar .chrono-seg')).toHaveCount(0)
+})
+
+test('une pause courte reste visible : largeur minimale + compteur de pauses', async ({ page }) => {
+  const guard = consoleGuard(page)
+  // journée réaliste : 4 h 55 de travail haché de pauses de 20 à 40 s
+  const timeline = [
+    { type: 'work', startTime: at(13, 54), endTime: at(16, 37), duration: 163 * MINUTE },
+    { type: 'break', startTime: at(13, 50), endTime: at(13, 54), duration: 4 * MINUTE },
+    { type: 'work', startTime: at(11, 11), endTime: at(13, 50), duration: 159 * MINUTE },
+    { type: 'break', startTime: at(11, 10), endTime: at(11, 10) + 40 * SECOND, duration: 40 * SECOND },
+    { type: 'break', startTime: at(10, 20), endTime: at(10, 20) + 20 * SECOND, duration: 20 * SECOND }
+  ]
+  await seed(page, { now: at(16, 37), state: stateWith(timeline) })
+  await page.goto('/')
+
+  const measured = await measureSegments(page)
+  const breaks = measured.filter((s) => s.type === 'break')
+  expect(breaks.length).toBe(3)
+
+  const bar = await page.locator('#chronoBar').boundingBox()
+  for (const brk of breaks) {
+    // ≥ 8 px de large quel que soit le poids réel de la pause (< 1 % du total)
+    expect(brk.widthPx).toBeGreaterThanOrEqual(8)
+    expect(brk.widthPct).toBeGreaterThanOrEqual(1.9)
+    // et la géométrie annoncée reste celle du rendu
+    expect(Math.abs(brk.widthPx / bar.width - brk.widthPct / 100)).toBeLessThan(0.02)
+  }
+
+  // les pauses restent minoritaires : le travail garde l'essentiel de la barre
+  const workPx = measured.filter((s) => s.type === 'work').reduce((a, s) => a + s.widthPx, 0)
+  expect(workPx / bar.width).toBeGreaterThan(0.9)
+
+  // le résumé annonce le nombre de pauses, pas seulement leur durée
+  await expect(page.locator('#chronoSummary')).toContainText('breaks 5 min (3×)')
+
+  // une pause élargie reste survolable et documentée
+  await page.locator('#chronoBar .chrono-seg.break').first().hover()
+  const tooltip = page.locator('#chronoTooltip')
+  await expect(tooltip).toBeVisible()
+  await expect(tooltip).toContainText('Break')
+  await expect(tooltip).toContainText('20 s')
+
+  guard.assertClean('pause courte visible')
 })

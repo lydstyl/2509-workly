@@ -5,7 +5,7 @@ A simple and elegant work time tracking application with a beautiful user interf
 ## Features
 
 - ⏱️ Track work and break sessions
-- 📊 Chronological timeline bar: work (blue) and breaks (orange) with width proportional to duration — a 1 h break next to 10 h of work is exactly 1/10 as wide
+- 📊 Chronological timeline bar: work (blue) and breaks (orange, hatched) with width proportional to duration — a 1 h break next to 10 h of work is exactly 1/10 as wide, and short breaks keep a visible minimum width (2 % of the bar, capped at 18 % overall) so they never shrink to an invisible sliver
 - 🖱️ Hover (or keyboard focus) a segment to see its exact start, end and duration
 - 📊 View total work and break time statistics
 - 📝 Timeline view of all activities

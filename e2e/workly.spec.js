@@ -5,6 +5,7 @@
  */
 const { test, expect } = require('playwright/test')
 const { HOUR, MINUTE, at, stateWith, seed, consoleGuard } = require('./helpers')
+const pkg = require('../package.json')
 
 test('/health expose la version et la fonctionnalité de frise', async ({ request }) => {
   const response = await request.get('/health')
@@ -12,7 +13,7 @@ test('/health expose la version et la fonctionnalité de frise', async ({ reques
   const health = await response.json()
   expect(health.status).toBe('ok')
   expect(health.app).toBe('2509-workly')
-  expect(health.version).toBe('1.1.0')
+  expect(health.version).toBe(pkg.version)
   expect(health.features).toContain('chrono-timeline')
 })
 

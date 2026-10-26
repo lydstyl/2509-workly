@@ -29,8 +29,17 @@
   const MIN_SEGMENT_MS = SECOND
   /** Nombre de repères horaires maximum sur l'axe. */
   const MAX_TICKS = 12
-  /** Largeur minimale (px) d'un segment dans la frise — cf. .chrono-seg { min-width }. */
-  const MIN_SEGMENT_PX = 3
+  /**
+   * Part minimale de la barre (%) pour un segment non nul, même très court.
+   * Sans ce plancher, une pause de 30 s dans une journée de 5 h ne pèse que
+   * 0,17 % de la frise : à l'écran elle fait un liseré de 1 px — invisible.
+   * La distorsion induite reste bornée par FLOOR_BUDGET_PCT.
+   */
+  const MIN_SEGMENT_PCT = 2
+  /** Budget total (%) que les planchers peuvent emprunter à la barre. */
+  const FLOOR_BUDGET_PCT = 18
+  /** Largeur minimale (px) d'un segment dans la frise — filet de sécurité CSS. */
+  const MIN_SEGMENT_PX = 2
 
   /* ------------------------------------------------------------------ *
    * Formatage
@@ -108,6 +117,82 @@
    * ------------------------------------------------------------------ */
 
   /**
+   * Largeurs (%) de la frise : proportionnelles aux durées, mais tout segment
+   * non nul garde au moins `minWidthPct` de la barre — sinon une pause de
+   * quelques secondes tombe sous le pixel et disparaît de la frise.
+   *
+   * Water-filling : on épingle au plancher les segments trop fins, on
+   * redistribue le reste au prorata des durées, et on recommence tant qu'un
+   * segment repasse sous le plancher. Le plancher effectif est borné par
+   * `floorBudgetPct` (part totale maximale prise à la barre) et par 100/n.
+   */
+  function computeWidths(durations, totalMs, options) {
+    const opts = options || {}
+    const count = durations.length
+    const proportional = durations.map(function (duration) {
+      return totalMs > 0 ? (duration / totalMs) * 100 : 0
+    })
+    if (count < 2 || totalMs <= 0) return proportional
+
+    const requested = opts.minWidthPct === undefined ? MIN_SEGMENT_PCT : opts.minWidthPct
+    const budget = opts.floorBudgetPct === undefined ? FLOOR_BUDGET_PCT : opts.floorBudgetPct
+    if (!(requested > 0) || !(budget > 0)) return proportional
+
+    const pinned = []
+    for (let i = 0; i < count; i += 1) {
+      if (durations[i] > 0 && proportional[i] < requested) pinned.push(i)
+    }
+    if (!pinned.length) return proportional
+
+    const floor = Math.min(requested, budget / pinned.length, 100 / count)
+    const widths = proportional.slice()
+
+    for (let pass = 0; pass <= count; pass += 1) {
+      const free = []
+      let freeMs = 0
+      for (let i = 0; i < count; i += 1) {
+        if (pinned.indexOf(i) === -1) {
+          free.push(i)
+          freeMs += durations[i]
+        }
+      }
+      const freePct = Math.max(0, 100 - floor * pinned.length)
+      let added = false
+      if (freeMs > 0) {
+        for (let k = 0; k < free.length; k += 1) {
+          const width = (durations[free[k]] / freeMs) * freePct
+          if (durations[free[k]] > 0 && width < floor) {
+            pinned.push(free[k])
+            added = true
+          }
+        }
+      }
+      if (added) continue
+
+      for (let i = 0; i < count; i += 1) {
+        widths[i] = pinned.indexOf(i) === -1 ? 0 : floor
+      }
+      if (freeMs > 0) {
+        for (let k = 0; k < free.length; k += 1) {
+          widths[free[k]] = (durations[free[k]] / freeMs) * freePct
+        }
+      }
+      break
+    }
+
+    // La somme doit valoir 100 % : le résidu d'arrondi va au plus gros segment
+    // (sinon les repères de l'axe dérivent par rapport à la barre).
+    let sum = 0
+    let biggest = 0
+    for (let i = 0; i < count; i += 1) {
+      sum += widths[i]
+      if (widths[i] > widths[biggest]) biggest = i
+    }
+    if (sum > 0) widths[biggest] += 100 - sum
+    return widths
+  }
+
+  /**
    * Construit le modèle de la frise : segments ordonnés chronologiquement,
    * avec largeur proportionnelle à la durée.
    *
@@ -170,10 +255,17 @@
     }, 0)
 
     let cursor = 0
+    const widths = computeWidths(
+      kept.map(function (item) {
+        return item.duration
+      }),
+      totalMs,
+      opts
+    )
     const segments = kept.map(function (item, index) {
-      const startPct = totalMs > 0 ? (cursor / totalMs) * 100 : 0
-      const widthPct = totalMs > 0 ? (item.duration / totalMs) * 100 : 0
-      cursor += item.duration
+      const startPct = cursor
+      const widthPct = widths[index]
+      cursor += widthPct
       const durationMs = item.duration
       let durationLabel = formatShortDuration(durationMs)
       if (durationMs > 0 && durationMs < SECOND) durationLabel = '< 1 s'
@@ -201,19 +293,23 @@
   }
 
   /**
-   * Position (en % du total) d'un instant sur l'échelle des durées cumulées.
-   * Sert à placer les repères horaires exactement sous les segments.
+   * Position (en % de la barre) d'un instant, calculée sur la géométrie
+   * *affichée* (startPct / widthPct) et non sur les durées brutes : les
+   * segments courts sont élargis au plancher visuel, les repères doivent donc
+   * suivre la même échelle pour rester sous le bon bloc.
+   *
+   * @param {Array} segments segments du modèle (avec startPct / widthPct)
+   * @param {number} totalMs conservé pour compatibilité d'appel (non utilisé)
+   * @param {number} timestamp instant à placer
    */
   function timeToPct(segments, totalMs, timestamp) {
-    if (totalMs <= 0 || !segments.length) return 0
-    let cursor = 0
+    if (!segments.length) return 0
     for (let i = 0; i < segments.length; i += 1) {
       const seg = segments[i]
-      if (timestamp <= seg.startTime) return (cursor / totalMs) * 100
+      if (!(seg.duration > 0) || timestamp <= seg.startTime) return seg.startPct
       if (timestamp <= seg.endTime) {
-        return ((cursor + (timestamp - seg.startTime)) / totalMs) * 100
+        return seg.startPct + ((timestamp - seg.startTime) / seg.duration) * seg.widthPct
       }
-      cursor += seg.duration
     }
     return 100
   }
@@ -800,10 +896,15 @@
         (acc, s) => (s.type === 'break' ? acc + s.duration : acc),
         0
       )
+      const breakCount = model.segments.reduce(
+        (acc, s) => (s.type === 'break' ? acc + 1 : acc),
+        0
+      )
       this.el.chronoSummary.textContent =
         `${formatTimeOfDay(first.startTime)} → ${formatTimeOfDay(last.endTime)} · ` +
         `${formatShortDuration(model.totalMs)} tracked · work ${formatShortDuration(workMs)} · ` +
-        `breaks ${formatShortDuration(breakMs)}`
+        `breaks ${formatShortDuration(breakMs)}` +
+        (breakCount ? ` (${breakCount}×)` : '')
 
       // Une info-bulle ouverte doit suivre la session en cours qui grandit.
       const hovered = this._hoveredIndex
@@ -886,6 +987,8 @@
     STORAGE_KEY: STORAGE_KEY,
     DEFAULT_GOAL_HOURS: DEFAULT_GOAL_HOURS,
     MIN_SEGMENT_MS: MIN_SEGMENT_MS,
+    MIN_SEGMENT_PCT: MIN_SEGMENT_PCT,
+    FLOOR_BUDGET_PCT: FLOOR_BUDGET_PCT,
     MIN_SEGMENT_PX: MIN_SEGMENT_PX,
     MAX_TICKS: MAX_TICKS,
     SECOND: SECOND,
@@ -900,6 +1003,7 @@
     formatDate: formatDate,
     isSameDay: isSameDay,
     buildTimeline: buildTimeline,
+    computeWidths: computeWidths,
     buildTicks: buildTicks,
     timeToPct: timeToPct,
     defaultState: defaultState,
