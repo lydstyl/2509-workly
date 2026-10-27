@@ -8,8 +8,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY server.js ./
-COPY work-tracker.js ./
 COPY work-tracker.html ./
+COPY src/ ./src/
 
 EXPOSE 3013
 

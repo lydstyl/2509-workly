@@ -17,14 +17,28 @@ test('/health expose la version et la fonctionnalité de frise', async ({ reques
   expect(health.features).toContain('chrono-timeline')
 })
 
-test('les assets sont bien servis (work-tracker.js compris)', async ({ request }) => {
+test('tous les modules de src/ sont servis et chargés par la page', async ({ request }) => {
   const page = await request.get('/')
   expect(page.ok()).toBeTruthy()
-  expect(await page.text()).toContain('work-tracker.js')
+  const html = await page.text()
 
-  const script = await request.get('/work-tracker.js')
-  expect(script.ok()).toBeTruthy()
-  expect(await script.text()).toContain('buildTimeline')
+  const modules = {
+    'src/constants.js': 'STORAGE_KEY',
+    'src/format.js': 'formatShortDuration',
+    'src/timeline.js': 'buildTimeline',
+    'src/chrono-view.js': 'segmentMarkup',
+    'src/tooltip.js': 'ChronoTooltip',
+    'src/core.js': 'WorkTrackerCore',
+    'src/app.js': 'WorklyApp',
+    'src/boot.js': 'worklySetNow'
+  }
+
+  for (const [file, symbol] of Object.entries(modules)) {
+    expect(html, `module non chargé par la page : ${file}`).toContain(file)
+    const asset = await request.get(`/${file}`)
+    expect(asset.ok(), `module non servi : ${file}`).toBeTruthy()
+    expect(await asset.text(), `symbole manquant dans ${file}`).toContain(symbol)
+  }
 })
 
 test('l’app démarre sans erreur console et sans session', async ({ page }) => {

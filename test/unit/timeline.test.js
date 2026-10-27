@@ -5,7 +5,7 @@
  */
 const test = require('node:test')
 const assert = require('node:assert/strict')
-const W = require('../../work-tracker.js')
+const W = require('../../src/index.js')
 
 const { SECOND, MINUTE, HOUR, buildTimeline } = W
 

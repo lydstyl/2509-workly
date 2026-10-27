@@ -14,7 +14,14 @@ app.get('/health', (req, res) => {
     status: 'ok',
     app: pkg.name,
     version: pkg.version,
-    features: ['chrono-timeline', 'segment-tooltip', 'timeline-axis', 'break-min-width'],
+    features: [
+      'chrono-timeline',
+      'segment-tooltip',
+      'timeline-axis',
+      'break-min-width',
+      'modular-src',
+      'break-persist'
+    ],
     uptime_s: Math.round(process.uptime())
   })
 })

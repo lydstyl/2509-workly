@@ -745,43 +745,13 @@
       </div>
     </div>
 
-    <script src="work-tracker.js"></script>
-    <script>
-      // Amorçage : toute la logique vit dans work-tracker.js (testable en Node),
-      // ici on ne fait que la brancher sur le DOM.
-      ;(function () {
-        const Workly = window.Workly
-
-        // Horloge injectable : les tests e2e la pilotent via window.__WORKLY_NOW__.
-        const clock = function () {
-          return typeof window.__WORKLY_NOW__ === 'number'
-            ? window.__WORKLY_NOW__
-            : Date.now()
-        }
-
-        function boot() {
-          const core = new Workly.WorkTrackerCore({
-            storage: window.localStorage,
-            now: clock
-          })
-          const app = new Workly.WorklyApp(core)
-
-          // Exposé pour les tests (unitaires e2e) et le débogage.
-          window.worklyCore = core
-          window.worklyApp = app
-          window.worklySetNow = function (ts) {
-            window.__WORKLY_NOW__ = ts
-            app.refresh()
-          }
-          return app
-        }
-
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', boot)
-        } else {
-          boot()
-        }
-      })()
-    </script>
+    <script src="src/constants.js"></script>
+    <script src="src/format.js"></script>
+    <script src="src/timeline.js"></script>
+    <script src="src/chrono-view.js"></script>
+    <script src="src/tooltip.js"></script>
+    <script src="src/core.js"></script>
+    <script src="src/app.js"></script>
+    <script src="src/boot.js"></script>
   </body>
 </html>

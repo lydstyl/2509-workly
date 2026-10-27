@@ -50,6 +50,17 @@ async function seed(page, options) {
   )
 }
 
+/**
+ * Pose l'horloge SANS toucher au localStorage : indispensable pour tester un
+ * `page.reload()`, sinon le script d'init remet le storage à zéro à chaque
+ * navigation (et efface l'état qu'on veut justement vérifier).
+ */
+async function seedClock(page, now) {
+  await page.addInitScript((value) => {
+    window.__WORKLY_NOW__ = value
+  }, now)
+}
+
 /** Aucune erreur console / exception JS ne doit passer inaperçue. */
 function consoleGuard(page) {
   const errors = []
@@ -88,6 +99,7 @@ module.exports = {
   at,
   stateWith,
   seed,
+  seedClock,
   consoleGuard,
   measureSegments
 }
